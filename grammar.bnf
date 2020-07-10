@@ -1,0 +1,240 @@
+Note that keywords are case insensitive. Whenever a keyword 
+terminal is denoted using backticks, all case variants are
+accepted.
+
+InputElement:
+    WhiteSpace
+    Token
+
+Token:
+    Identifier
+    ReservedWord
+    Punctuator
+    NumericLiteral
+    StringLiteral
+
+Identifier:
+    IdentifierName but not ReservedWord
+
+IdentifierName:
+    IdentifierStart
+    IdentifierName IdentifierContinue
+
+IdentifierStart:
+    A-Za-z
+
+IdentifierContinue:
+    A-Za-z0-9
+
+Punctuator:
+    `(`, `)`, `{`, `}`, `[`, `]`, `:`, `*`, `=`, `+`, `-`, `&`,
+    `|`, `||`, `^`, `/`, `=`, `>`, `>=`, `<`, `<=`, `!=`, `%`,
+    `!`, `~`, `,`, `.`, `?`
+
+NumericLiteral:
+    NumericIntegerLiteral `.` DecimalPart? ExponentPart?
+    `.` DecimalPart? ExponentPart?
+    NumericIntegerLiteral ExponentPart?
+
+NumericIntegerLiteral: 0-9 NumericIntegerLiteral?
+
+DecimalPart: 0-9 DecimalPart?
+
+ExponentPart: ExponentIndicator Sign NumericIntegerLiteral
+
+ExponentIndicator: `e`, `E`
+Sign: `+`, `-`
+
+StringLiteral:
+    `"` DoubleStringCharacters? `"`
+    `'` SingleStringCharacters? `'`
+
+DoubleStringCharacters: DoubleStringCharacter DoubleStringCharacters?
+
+DoubleStringCharacter:
+    SourceCharacter but not one of `"` or  `\`
+    `\` EscapeSequence
+
+SingleStringCharacters:
+    SingleStringCharacter SingleStringCharacters?
+
+SingleStringCharacter:
+    SourceCharacter but not one of `'` or  `\`
+    `\` EscapeSequence
+
+EscapeSequence:
+    EscapeCharacter
+    SourceCharacter but not one of EscapeCharacter
+
+EscapeCharacter:
+    `"`, `'`
+
+WhiteSpace:
+    space, tab, cr, lf.
+
+ReservedWord:
+    `and`, `array`, `as`, `asc`, `between`, `by`, `desc`,
+    `distinct`, `exists`, `false`, `from`, `group`, `in`,
+    `join`, `limit`, `not`, `null`, `offset`, `or`, `order`,
+    `select`, `top`, `true`, `udf`, `undefined`, `value`,
+    `where` (case insensitive)
+
+SQLQuery ::
+    SelectClause FromClause? WhereClause? GroupByClause? OrderByClause? OffsetLimitClause?
+
+FromClause ::
+    `from` CollectionExpression
+
+CollectionExpression ::
+    AliasedCollectionExpression
+    Identifier `in` Collection
+    CollectionExpression `join` AliasedCollectionExpression
+
+AliasedCollectionExpression ::
+    Collection
+    Collection `as` Identifier
+
+Collection ::
+    InputPathCollection
+    SubqueryCollection
+
+InputPathCollection ::
+    Identifier
+    InputPathCollection `.` Identifier # IdentifierPathExpression
+    InputPathCollection `[` StringLiteral `]` # StringPathExpression
+    InputPathCollection `[` NumericLiteral `]` # NumberPathExpression
+
+SubqueryCollection :: `(` SQLQuery `)`
+
+WhereClause :: `where` ScalarExpression
+
+GroupByClause :: `group` `by` ScalarExpressionList
+
+OrderByClause :: `order` `by` OrderByList
+
+OrderByList ::
+    OrderByItem
+    OrderByList `,` OrderByItem
+
+OrderByItem ::
+    ScalarExpression OrderByOrder?
+
+OrderByOrder :: one of `asc`, `desc`
+
+OffsetLimitClause ::
+    `offset` NumericLiteral `limit` NumericLiteral
+
+SelectClause ::
+    `select` `distinct`? TopSpec Selection
+
+TopSpec ::
+    `top` NumericLiteral
+
+Selection ::
+    SelectStar
+    SelectValue
+    SelectList
+
+SelectStar :: `*`
+
+SelectValue :: `value` ScalarExpression
+
+SelectList ::
+    SelectItem
+    SelectList `,` SelectItem
+
+SelectItem ::
+    ScalarExpression
+    ScalarExpression `as` Identifier
+
+ScalarExpression ::
+    ConditionalScalarExpression
+
+ConditionalScalarExpression ::
+    BinaryLogicalScalarExpression
+    BinaryLogicalScalarExpression `?` ScalarExpression `:` ScalarExpression
+
+BinaryLogicalScalarExpression ::
+    BinaryBitwiseScalarExpression
+    BinaryLogicalScalarExpression `&&` BinaryBitwiseScalarExpression
+    BinaryLogicalScalarExpression `and` BinaryBitwiseScalarExpression
+    BinaryLogicalScalarExpression `||` BinaryBitwiseScalarExpression
+    BinaryLogicalScalarExpression `or` BinaryBitwiseScalarExpression
+    BinaryLogicalScalarExpression `??` BinaryBitwiseScalarExpression
+
+BinaryBitwiseScalarExpression
+    EqualityScalarExpression
+    BinaryBitwiseScalarExpression `&` EqualityScalarExpression
+    BinaryBitwiseScalarExpression `|` EqualityScalarExpression  
+
+EqualityScalarExpression ::
+    RelationalScalarExpression
+    EqualityScalarExpression `=` RelationalScalarExpression
+    EqualityScalarExpression `!=` RelationalScalarExpression
+
+RelationalScalarExpression ::
+    AdditiveScalarExpression
+    RelationalScalarExpression `>` AdditiveScalarExpression
+    RelationalScalarExpression `>=` AdditiveScalarExpression
+    RelationalScalarExpression `<` AdditiveScalarExpression
+    RelationalScalarExpression `<=` AdditiveScalarExpression
+
+AdditiveScalarExpression ::
+    MultiplicativeScalarExpression
+    AdditiveScalarExpression `+` MultiplicativeScalarExpression
+    AdditiveScalarExpression `-` MultiplicativeScalarExpression
+
+MultiplicativeScalarExpression ::
+    UnaryScalarExpression
+    MultiplicativeScalarExpression `*` UnaryScalarExpression
+    MultiplicativeScalarExpression `/` UnaryScalarExpression
+    MultiplicativeScalarExpression `%` UnaryScalarExpression
+
+UnaryScalarExpression ::
+    MemberExpression
+    UnaryOperator UnaryScalarExpression
+
+UnaryOperator :: one of `-`, `+`, `~`, `NOT`
+
+MemberExpression ::
+    PrimaryExpression
+    MemberExpression `[` ScalarExpression `]`
+    MemberExpression `.` Identifier
+
+PrimaryExpression ::
+    FunctionCallScalarExpression
+    LiteralScalarExpression
+    ArrayCreateScalarExpression
+    ArrayScalarExpression
+    ExistsScalarExpression
+    ObjectCreateScalarExpression
+    SubqueryScalarExpression
+
+FunctionCallScalarExpression ::
+    Identifier
+    Identifier `(` ScalarExpressionList? `)`
+    `udf` `.` Identifier `(` ScalarExpressionList? `)`
+
+LiteralScalarExpression ::
+    StringLiteral
+    NumericLiteral
+    `true`
+    `false`
+    `null`
+    `undefined`
+
+ArrayCreateScalarExpression :: `[` ScalarExpressionList `]`
+ArrayScalarExpression :: `array` `(` SQLQuery `)`
+ExistsScalarExpression ::`exists` `(` SQLQuery `)`
+SubqueryScalarExpression :: `(` SQLQuery `)`
+ObjectCreateScalarExpression :: `{` ObjectPropertyList? `}`
+
+ObjectPropertyList ::
+    ObjectProperty
+    ObjectPropertyList `,` ObjectProperty
+
+ScalarExpressionList ::
+    ScalarExpression
+    ScalarExpressionList `,` ScalarExpression
+
+ObjectProperty :: StringLiteral `:` ScalarExpression
