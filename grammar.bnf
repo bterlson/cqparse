@@ -79,6 +79,10 @@ ReservedWord:
     `select`, `top`, `true`, `udf`, `undefined`, `value`,
     `where` (case insensitive)
 
+
+
+
+
 SQLQuery ::
     SelectClause FromClause? WhereClause? GroupByClause? OrderByClause? OffsetLimitClause?
 
@@ -151,8 +155,16 @@ ScalarExpression ::
     ConditionalScalarExpression
 
 ConditionalScalarExpression ::
+    InScalarExpression
+    InScalarExpression `?` ScalarExpression `:` ScalarExpression
+
+InScalarExpression ::
+    BetweenScalarExpression
+    BinaryLogicalScalarExpression `not`? `in` `(` ScalarExpressionList `)`
+
+BetweenScalarExpression ::
     BinaryLogicalScalarExpression
-    BinaryLogicalScalarExpression `?` ScalarExpression `:` ScalarExpression
+    BinaryLogicalScalarExpression `not`? `between` BinaryLogicalScalarExpression `and` BinaryLogicalScalarExpression
 
 BinaryLogicalScalarExpression ::
     BinaryBitwiseScalarExpression
@@ -208,7 +220,7 @@ PrimaryExpression ::
     ArrayScalarExpression
     ExistsScalarExpression
     ObjectCreateScalarExpression
-    SubqueryScalarExpression
+    SQLQueryOrParenthesizedScalarExpression
 
 FunctionCallScalarExpression ::
     Identifier
@@ -226,7 +238,12 @@ LiteralScalarExpression ::
 ArrayCreateScalarExpression :: `[` ScalarExpressionList `]`
 ArrayScalarExpression :: `array` `(` SQLQuery `)`
 ExistsScalarExpression ::`exists` `(` SQLQuery `)`
-SubqueryScalarExpression :: `(` SQLQuery `)`
+
+SQLQueryOrParenthesizedScalarExpression ::
+    `(` SelectClause `)`
+    `(` ScalarExpression `)`
+
+
 ObjectCreateScalarExpression :: `{` ObjectPropertyList? `}`
 
 ObjectPropertyList ::
