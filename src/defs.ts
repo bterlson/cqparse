@@ -44,7 +44,7 @@ export const CharCodes = {
   dot: 0x2e,
   comma: 0x2c,
   question: 0x3f,
-  colon: 0x3a
+  colon: 0x3a,
 };
 
 export enum TokenKind {
@@ -141,7 +141,6 @@ export const keywords = [
   ["where", TokenKind.whereKeyword],
 ] as const;
 
-
 export const binops = [
   TokenKind.plus,
   TokenKind.andKeyword,
@@ -159,51 +158,134 @@ export const binops = [
   TokenKind.notEquals,
   TokenKind.orKeyword,
   TokenKind.doublePipe,
-  TokenKind.minus
+  TokenKind.minus,
 ].reverse(); // higher precedence = higher array index
 
-export interface QueryNode {
-  kind: 'QueryNode',
-  type: 'select',
-  distinct: boolean
-  top?: number,
+export interface SQLQueryNode {
+  kind: "SqlQueryNode";
+  select: SelectClauseNode;
+  from?: FromClauseNode;
+  where?: WhereClauseNode;
+  groupBy?: GroupByNode;
+  orderBy?: OrderByNode;
+  offsetLimit?: OffsetLimitNode;
+}
+
+export interface GroupByNode {
+  kind: "GroupByNode";
+  exprs: ScalarExpression[];
+}
+
+export interface OrderByNode {
+  kind: "OrderByNode";
+  items: OrderByItemNode[];
+}
+
+export interface OrderByItemNode {
+  kind: "OrderByItemNode";
+  expr: ScalarExpression;
+  order?: "asc" | "desc";
+}
+
+export interface OffsetLimitNode {
+  kind: "OffsetLimitNode";
+  offset: number;
+  limit: number;
+}
+
+export interface FromClauseNode {
+  kind: "FromClauseNode";
+  collection: CollectionExpressionNode | JoinExpressionNode;
+}
+
+export type CollectionNode =
+  | InputPathCollectionNode
+  | SubqueryCollectionNode
+  | IdentifierNode;
+
+export interface JoinExpressionNode {
+  kind: "JoinExpressionNode";
+  lhs: JoinExpressionNode | CollectionExpressionNode;
+  rhs: CollectionExpressionNode;
+}
+export interface CollectionExpressionNode {
+  kind: "CollectionExpressionNode";
+  collection: CollectionNode;
+  in?: CollectionNode;
+  as?: IdentifierNode;
+}
+
+export interface AliasedCollectionExpressionNode {
+  kind: "AliasedCollectionExpressionNode";
+  as: IdentifierNode;
+}
+
+export interface ArrayIteratorCollectionExpressionNode {
+  kind: "ArrayIteratorCollectionExpressionNode";
+  in: CollectionNode;
+}
+
+export interface SubqueryCollectionNode {
+  kind: "SubqueryCollectionNode";
+  query: SQLQueryNode;
+}
+export interface InputPathCollectionNode {
+  kind: "InputPathCollectionNode";
+  base: InputPathCollectionNode | IdentifierNode;
+  member: IdentifierNode | LiteralScalarExpression;
+}
+
+export interface CollectionExpressionNode {
+  kind: "CollectionExpressionNode";
+}
+
+export interface SelectClauseNode {
+  kind: "SelectClauseNode";
+  type: "select";
+  distinct: boolean;
+  top?: number;
   selection: SelectStarNode | SelectValueNode | SelectListNode;
 }
 
+export interface WhereClauseNode {
+  kind: "WhereClauseNode";
+  expr: ScalarExpression;
+}
+
 export interface SelectStarNode {
-  kind: 'SelectStarNode'
+  kind: "SelectStarNode";
 }
 
 export interface SelectValueNode {
-  kind: 'SelectValueNode',
+  kind: "SelectValueNode";
   value: ScalarExpression;
 }
 
 export interface SelectListNode {
-  kind: 'SelectListNode',
-  items: SelectItemNode[]
+  kind: "SelectListNode";
+  items: SelectItemNode[];
 }
 
 export interface SelectItemNode {
-  kind: 'SelectItemNode',
+  kind: "SelectItemNode";
   value: ScalarExpression;
   as?: IdentifierNode;
 }
 
 export interface IdentifierNode {
-  kind: 'IdentifierNode',
+  kind: "IdentifierNode";
   value: string;
 }
 
 export interface PropertyRefScalarExpression {
-  kind: 'PropertyRefScalarExpression',
-  base: IdentifierNode | PropertyRefScalarExpression,
-  member: IdentifierNode
+  kind: "PropertyRefScalarExpression";
+  base: ScalarExpression;
+  member: ScalarExpression;
 }
 
 export interface ArrayScalarExpression {
-  kind: 'ArrayScalarExpression',
-  value: QueryNode
+  kind: "ArrayScalarExpression";
+  value: SelectClauseNode;
 }
 
 export type ScalarExpression =
@@ -220,62 +302,75 @@ export type ScalarExpression =
   | IdentifierNode
   | ExistsScalarExpression
   | FunctionCallScalarExpression
-  ;
+  | UnaryScalarExpression
+  | SubqueryScalarExpression;
 
 export interface FunctionCallScalarExpression {
-  kind: 'FunctionCallScalarExpression',
-  udf: boolean,
-  base: IdentifierNode,
-  args: ScalarExpression[]
+  kind: "FunctionCallScalarExpression";
+  udf: boolean;
+  base: IdentifierNode;
+  args: ScalarExpression[];
+}
+
+export interface SubqueryScalarExpression {
+  kind: "SubqueryScalarExpression";
+  query: SQLQueryNode;
 }
 
 export interface ExistsScalarExpression {
-  kind: 'ExistsScalarExpression',
-  query: QueryNode
+  kind: "ExistsScalarExpression";
+  query: SelectClauseNode;
 }
 
 export interface ObjectCreateScalarExpression {
-  kind: 'ObjectCreateScalarExpression',
-  properties: { key: string, value: ScalarExpression }[]
+  kind: "ObjectCreateScalarExpression";
+  properties: { key: string; value: ScalarExpression }[];
 }
 export interface CoalesceScalarExpression {
-  kind: 'CoalesceScalarExpression',
-  lhs: ScalarExpression,
-  rhs: ScalarExpression,
+  kind: "CoalesceScalarExpression";
+  lhs: ScalarExpression;
+  rhs: ScalarExpression;
 }
 
 export interface ConditionalScalarExpression {
-  kind: 'ConditionalScalarExpression',
-  lhs: ScalarExpression,
-  rhs: ScalarExpression
+  kind: "ConditionalScalarExpression";
+  test: ScalarExpression;
+  consequent: ScalarExpression;
+  alternate: ScalarExpression;
 }
 
 export interface BinaryScalarExpression {
-  kind: 'BinaryScalarExpression',
-  lhs: ScalarExpression,
-  rhs: ScalarExpression,
-  op: string
+  kind: "BinaryScalarExpression";
+  lhs: ScalarExpression;
+  rhs: ScalarExpression;
+  op: string;
 }
 
 export interface InScalarExpression {
-  kind: 'InScalarExpression',
-  inverted: boolean,
-  test: ScalarExpression,
-  values: ScalarExpression[]
+  kind: "InScalarExpression";
+  inverted: boolean;
+  test: ScalarExpression;
+  values: ScalarExpression[];
 }
 export interface BetweenScalarExpression {
-  kind: 'BetweenScalarExpression',
-  inverted: boolean,
-  test: ScalarExpression,
-  low: ScalarExpression,
-  high: ScalarExpression
+  kind: "BetweenScalarExpression";
+  inverted: boolean;
+  test: ScalarExpression;
+  low: ScalarExpression;
+  high: ScalarExpression;
 }
 export interface ArrayCreateScalarExpression {
-  kind: 'ArrayCreateScalarExpression',
+  kind: "ArrayCreateScalarExpression";
   values: ScalarExpression[];
 }
 
 export interface LiteralScalarExpression {
-  kind: 'LiteralScalarExpression',
+  kind: "LiteralScalarExpression";
   value: string;
+}
+
+export interface UnaryScalarExpression {
+  kind: "UnaryScalarExpression";
+  operand: ScalarExpression;
+  op: string;
 }

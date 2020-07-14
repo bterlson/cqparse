@@ -87,16 +87,22 @@ SQLQuery ::
     SelectClause FromClause? WhereClause? GroupByClause? OrderByClause? OffsetLimitClause?
 
 FromClause ::
-    `from` CollectionExpression
+    `from` JoinClause
+
+JoinClause ::
+    CollectionExpression
+    JoinClause `join` CollectionExpression
 
 CollectionExpression ::
+    Collection
     AliasedCollectionExpression
-    Identifier `in` Collection
-    CollectionExpression `join` AliasedCollectionExpression
+    ArrayIteratorCollectionExpression
 
 AliasedCollectionExpression ::
-    Collection
     Collection `as` Identifier
+
+ArrayIteratorCollectionExpression ::
+    Identifier `in` Collection
 
 Collection ::
     InputPathCollection
@@ -155,22 +161,23 @@ ScalarExpression ::
     ConditionalScalarExpression
 
 ConditionalScalarExpression ::
+    BetweenOrInScalarExpression
+    BetweenOrInScalarExpression `?` ScalarExpression `:` ScalarExpression
+
+BetweenOrInScalarExpression ::
+    BinaryLogicalScalarExpression
     InScalarExpression
-    InScalarExpression `?` ScalarExpression `:` ScalarExpression
+    BetweenScalarExpression
 
 InScalarExpression ::
-    BetweenScalarExpression
     BinaryLogicalScalarExpression `not`? `in` `(` ScalarExpressionList `)`
 
 BetweenScalarExpression ::
-    BinaryLogicalScalarExpression
     BinaryLogicalScalarExpression `not`? `between` BinaryLogicalScalarExpression `and` BinaryLogicalScalarExpression
 
 BinaryLogicalScalarExpression ::
     BinaryBitwiseScalarExpression
-    BinaryLogicalScalarExpression `&&` BinaryBitwiseScalarExpression
     BinaryLogicalScalarExpression `and` BinaryBitwiseScalarExpression
-    BinaryLogicalScalarExpression `||` BinaryBitwiseScalarExpression
     BinaryLogicalScalarExpression `or` BinaryBitwiseScalarExpression
     BinaryLogicalScalarExpression `??` BinaryBitwiseScalarExpression
 
